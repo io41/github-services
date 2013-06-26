@@ -1,5 +1,5 @@
 class Service::HipChat < Service
-  string :auth_token, :room, :restrict_to_branch
+  string :auth_token, :room, :restrict_to_branch, :branch_regexes
   boolean :notify, :quiet_fork, :quiet_watch
   white_list :room, :restrict_to_branch
 
@@ -20,6 +20,9 @@ class Service::HipChat < Service
       if branch_restriction.length > 0 && branch_restriction.index(branch) == nil
         return
       end
+      
+      # check if branch name regex is set and matches
+      return unless branch_name_matches?
     end
 
     # ignore forks and watches if boolean is set
@@ -45,5 +48,15 @@ class Service::HipChat < Service
         raise_config_error
       end
     end
+  end
+  
+  def branch_name_matches?
+    return true if data['branch_regexes'].nil?
+    return true if data['branch_regexes'].strip == ""
+    branch_regexes = data['branch_regexes'].split(',')
+    branch_regexes.each do |regex|
+      return true if Regexp.new(regex) =~ branch_name
+    end
+    false
   end
 end
